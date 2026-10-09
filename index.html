@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Sentinel ML — Fraud intelligence</title>
+  <style>
+    :root { --bg:#070b13; --panel:#0d1421; --line:#233147; --text:#edf4ff; --muted:#a1afc3; --cyan:#35d6e8; --purple:#ab91ff; --green:#65dfad; --amber:#f3bd70; --red:#ff899b; }
+    * { box-sizing:border-box; } [hidden] { display:none!important; }
+    body { margin:0; background:var(--bg); color:var(--text); font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    button,input,select,textarea { font:inherit; } button,select { cursor:pointer; }
+    textarea { width:100%; min-height:280px; resize:vertical; background:#080f1b; border:1px solid #354760; color:var(--text); padding:12px; border-radius:7px; font-family:monospace; }
+    button { border:1px solid var(--line); border-radius:8px; background:#152033; color:var(--text); padding:9px 14px; font-weight:600; }
+    button:hover:not(:disabled) { border-color:var(--cyan); background:#1b2e42; } button:disabled { opacity:.5; cursor:wait; }
+    :focus-visible { outline:3px solid var(--cyan); outline-offset:4px; }
+    .primary { background:var(--cyan); color:#05161d; border-color:var(--cyan); } .primary:hover:not(:disabled) { background:#84eaf4; }
+    input,select { background:#080f1b; border:1px solid #354760; color:var(--text); padding:10px 12px; border-radius:7px; max-width:100%; }
+    a { color:var(--cyan); } .skip { position:fixed; top:-80px; left:12px; z-index:10; padding:12px; background:var(--panel); } .skip:focus { top:12px; }
+    .app { display:flex; min-height:100vh; } .sidebar { width:230px; flex:0 0 230px; background:#090f19; border-right:1px solid var(--line); padding:30px 18px; display:flex; flex-direction:column; gap:28px; }
+    .brand { display:flex; align-items:center; gap:11px; padding:0 10px; font-size:21px; letter-spacing:-1px; } .brand em { font-style:normal; color:var(--cyan); }
+    .mark { width:32px; height:32px; display:grid; place-items:center; border:1px solid var(--cyan); border-radius:10px; color:var(--cyan); background:#102b38; box-shadow:0 0 24px #35d6e815; }
+    .eyebrow { font-size:10px; letter-spacing:.15em; text-transform:uppercase; font-weight:700; color:var(--muted); } nav { display:grid; gap:6px; margin-top:10px; }
+    .nav { border:1px solid transparent; background:transparent; color:var(--muted); text-align:left; padding:12px; } .nav span { display:inline-block; width:26px; color:var(--cyan); } .nav[aria-current="page"] { background:#152235; color:var(--text); border-color:#263a50; box-shadow:inset 3px 0 var(--cyan); }
+    .sidebar-note { margin-top:auto; padding:15px; background:#101a29; border:1px solid var(--line); border-radius:10px; font-size:12px; } .sidebar-note p { color:var(--muted); margin:8px 0 0; }
+    main { padding:32px; max-width:1550px; width:100%; min-width:0; margin:auto; align-self:flex-start; } .topbar,.row { display:flex; justify-content:space-between; align-items:center; gap:16px; } .topbar { margin-bottom:24px; align-items:flex-start; }
+    h1 { font-size:clamp(24px,3vw,32px); letter-spacing:-.04em; line-height:1.25; margin:6px 0 8px; } h2 { font-size:17px; margin:0 0 6px; letter-spacing:-.02em; } h3 { font-size:14px; margin:0; } p { margin:0 0 12px; } .muted,.subtitle { color:var(--muted); } .subtitle { font-size:13px; }
+    .controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center; } .controls label { font-size:12px; color:var(--muted); } .controls select { display:block; padding:8px 10px; }
+    .connection { display:flex; align-items:center; flex-wrap:wrap; gap:10px 20px; font-size:12px; color:var(--muted); margin-bottom:20px; } .badge { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:3px 10px; color:var(--muted); font-size:12px; text-transform:capitalize; } .approve { color:var(--green); background:#143228; border-color:#255441; } .review { color:var(--amber); background:#302819; border-color:#65502e; } .block { color:var(--red); background:#321c29; border-color:#623345; }
+    .notice { border:1px solid #625035; border-left:3px solid var(--amber); background:#211d18; border-radius:8px; padding:15px 18px; margin-bottom:20px; } .notice p { margin:0 0 7px; } code { font-size:12px; overflow-wrap:anywhere; } .status { min-height:22px; color:var(--cyan); font-size:13px; margin:12px 0; } .error { color:var(--red); }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:15px; margin-bottom:20px; } .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px; box-shadow:0 10px 35px #0002; } .metric { overflow:hidden; position:relative; } .metric:after { content:""; width:85px; height:85px; border:1px solid #35d6e818; border-radius:50%; position:absolute; right:-36px; bottom:-44px; pointer-events:none; } .metric-label { color:var(--muted); font-size:12px; } .metric-value { font-size:30px; font-weight:650; letter-spacing:-.04em; margin:8px 0; overflow-wrap:anywhere; } .metric-foot { font-size:11px; color:var(--muted); }
+    .grid { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(260px,1fr); gap:20px; } .stack { display:grid; gap:20px; align-content:start; } .legend { display:flex; gap:16px; color:var(--muted); font-size:12px; margin:15px 0; } .legend span:before { content:""; display:inline-block; width:16px; height:3px; background:var(--cyan); vertical-align:middle; margin-right:7px; } .legend span+span:before { background:var(--purple); }
+    .chart { width:100%; height:250px; display:block; } .chart text { fill:var(--muted); font-size:11px; } .chart-scroll { overflow-x:auto; } .chart-scroll svg { min-width:440px; } .empty { padding:30px 15px; color:var(--muted); text-align:center; border:1px dashed var(--line); border-radius:8px; margin-top:15px; }
+    dl { margin:18px 0 0; } .data-row { display:flex; justify-content:space-between; gap:20px; border-bottom:1px solid var(--line); padding:10px 0; } .data-row:last-child { border:0; } dt { color:var(--muted); font-size:12px; } dd { margin:0; text-align:right; overflow-wrap:anywhere; max-width:65%; } .small { font-size:12px; } .section-head { margin-bottom:20px; }
+    fieldset { border:0; padding:0; margin:0; min-width:0; } .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:22px 0; } .field { display:grid; gap:6px; font-size:13px; } .field small { color:var(--muted); font-size:11px; } .field input,.field select { width:100%; } .examples { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; } .examples button { font-size:12px; }
+    .result-score { font-size:58px; line-height:1.2; letter-spacing:-.05em; color:var(--cyan); margin:14px 0; } .meter { height:8px; background:#253247; border-radius:8px; overflow:hidden; margin:14px 0; } .meter span { display:block; height:100%; background:var(--cyan); width:0; }
+    .table-wrap { overflow-x:auto; margin-top:18px; } table { width:100%; border-collapse:collapse; font-size:12px; text-align:left; } caption { text-align:left; color:var(--muted); margin:0 0 12px; } th { color:var(--muted); font-weight:600; padding:12px; background:#111c2c; white-space:nowrap; } td { padding:14px 12px; border-bottom:1px solid var(--line); white-space:nowrap; } tbody tr:hover { background:#111d2d; } .pager { margin-top:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; } details { margin-top:18px; color:var(--muted); font-size:12px; } summary { cursor:pointer; } .footnote { color:var(--muted); font-size:11px; margin-top:24px; border-top:1px solid var(--line); padding-top:16px; }
+    @media(max-width:1100px) { .sidebar { width:200px; flex-basis:200px; } main { padding:25px; } .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .grid { grid-template-columns:1fr; } .topbar { flex-wrap:wrap; } }
+    @media(max-width:650px) { .app { display:block; } .sidebar { width:100%; padding:17px 14px; border-right:0; border-bottom:1px solid var(--line); gap:16px; } .sidebar-note,.sidebar .eyebrow { display:none; } nav { display:flex; overflow-x:auto; gap:4px; margin:0; } .nav { white-space:nowrap; padding:10px; font-size:12px; } .nav span { width:19px; } main { padding:22px 14px; } .card { padding:17px; } .metrics { gap:10px; } .metric-value { font-size:25px; } .form-grid { grid-template-columns:1fr; } .row { flex-wrap:wrap; } }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip">Skip to main content</a>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="mark" aria-hidden="true">◈</span><strong>sentinel<em>ML</em></strong></div>
+      <div><div class="eyebrow">Risk workspace</div><nav aria-label="Main navigation">
+        <button class="nav" data-view="overview" aria-current="page" aria-controls="overview"><span aria-hidden="true">◈</span>Overview</button>
+        <button class="nav" data-view="predict" aria-controls="predict"><span aria-hidden="true">＋</span>Score transaction</button>
+        <button class="nav" data-view="history" aria-controls="history"><span aria-hidden="true">≡</span>Transaction history</button>
+        <button class="nav" data-view="model" aria-controls="model"><span aria-hidden="true">⌁</span>Model &amp; training</button>
+      </nav></div>
+      <div class="sidebar-note"><strong>Local ML workspace</strong><p>XGBoost + Isolation Forest</p><p id="source-note">Loading training source…</p></div>
+    </aside>
+    <main id="main" tabindex="-1">
+      <header class="topbar"><div><div class="eyebrow">Fraud intelligence / local workspace</div><h1 id="page-title" tabindex="-1">Your risk, in focus.</h1><p class="subtitle" id="page-subtitle">Explore saved predictions and the signals behind them.</p></div>
+        <div class="controls"><label for="days">Reporting window<select id="days"><option value="1">Last 24 hours</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select></label><button id="refresh">Refresh data</button></div>
+      </header>
+      <div class="connection"><span class="badge" id="health">Connecting</span><span id="version">Model version unavailable</span><span id="updated">Awaiting API response</span></div>
+      <div class="notice" id="service-notice" hidden><p id="service-message"></p><p class="small">Serve this page from the backend. Once the server is running, use <strong>Model &amp; training → Train / retrain</strong>, or run this training command:</p><code id="train-command">curl -X POST http://127.0.0.1:8000/api/retrain</code></div>
+      <div class="status" id="global-status" role="status" aria-live="polite" aria-atomic="true"></div>
+      <div class="notice" id="benchmark-notice" hidden>ULB / Worldline benchmark: historical anonymized real transactions, not a live bank integration. The original PCA transforms are unavailable: raw payment details cannot be converted into these V1–V28 values. Historical labels are not predictions or guarantees of correct classification.</div>
+
+      <section id="overview" aria-label="Overview">
+        <div class="metrics">
+          <article class="card metric"><div class="metric-label">Transactions scored</div><div class="metric-value" id="total">—</div><div class="metric-foot">Saved predictions in this window</div></article>
+          <article class="card metric"><div class="metric-label">Flagged transactions</div><div class="metric-value" id="flagged">—</div><div class="metric-foot">Review or block recommendations</div></article>
+          <article class="card metric"><div class="metric-label">Blocked amount</div><div class="metric-value" id="blocked">—</div><div class="metric-foot">Model recommendations, not recovered funds</div></article>
+          <article class="card metric"><div class="metric-label">Average inference</div><div class="metric-value" id="latency">—</div><div class="metric-foot">Measured backend latency</div></article>
+        </div>
+        <div class="grid"><article class="card"><h2>Transaction volume</h2><p class="subtitle">Saved scores over the selected reporting window</p><div class="legend"><span>Total scored</span><span>Flagged</span></div><div id="chart-empty" class="empty">Loading transaction volume…</div><div class="chart-scroll"><svg id="chart" class="chart" viewBox="0 0 720 250" role="img" aria-label="Transaction volume" hidden></svg></div><details id="chart-details" hidden><summary>View chart data as a table</summary><div class="table-wrap"><table><thead><tr><th scope="col">Period</th><th scope="col">Total</th><th scope="col">Flagged</th></tr></thead><tbody id="chart-data"></tbody></table></div></details></article>
+          <div class="stack"><article class="card"><h2>Distribution monitoring</h2><p class="subtitle">Custom statistical drift against training data</p><dl><div class="data-row"><dt>Status</dt><dd id="drift-status">—</dd></div><div class="data-row"><dt>Drift score</dt><dd id="drift-score">—</dd></div><div class="data-row"><dt>Threshold</dt><dd id="drift-threshold">—</dd></div><div class="data-row"><dt>Samples compared</dt><dd id="drift-samples">—</dd></div></dl><p class="small muted" style="margin-top:14px">This is a custom statistical monitor, not Evidently. A drift signal is not proof of fraud.</p></article><article class="card"><h2>Start with a transaction</h2><p class="subtitle">Enter six features to run the trained ensemble and save its recommendation.</p><button class="primary" id="start-scoring" style="margin-top:16px">Score a transaction →</button></article></div>
+        </div>
+      </section>
+
+      <section id="predict" aria-label="Score a transaction" hidden>
+        <div class="grid"><article class="card"><h2>Transaction features</h2><p class="subtitle">Examples only fill the form. Submit to run a genuine model prediction and save it to history.</p><form id="prediction-form"><fieldset id="prediction-fields"><div class="examples"><button type="button" id="normal-example">Fill normal example</button><button type="button" id="suspicious-example">Fill suspicious example</button></div><div class="form-grid">
+          <label class="field" for="amount">Amount<input id="amount" name="amount" type="number" min="0" max="1000000" step="any" placeholder="125.00" required><small>Greater than 0, up to 1,000,000; consistent currency units</small></label>
+          <label class="field" for="hour">Transaction hour<input id="hour" name="hour" type="number" min="0" max="23" step="1" placeholder="14" required><small>Hour of day, 0–23</small></label>
+          <label class="field" for="distance_km">Distance from usual location<input id="distance_km" name="distance_km" type="number" min="0" max="20000" step="any" placeholder="8" required><small>Kilometers, 0–20,000</small></label>
+          <label class="field" for="transactions_24h">Transactions in 24 hours<input id="transactions_24h" name="transactions_24h" type="number" min="1" max="1000" step="1" placeholder="2" required><small>Whole count, 1–1,000</small></label>
+          <label class="field" for="account_age_days">Account age<input id="account_age_days" name="account_age_days" type="number" min="0" max="20000" step="1" placeholder="730" required><small>Whole days, 0–20,000</small></label>
+          <label class="field" for="is_international">International transaction<select id="is_international" name="is_international"><option value="false">No — domestic</option><option value="true">Yes — international</option></select><small>Whether the transaction crosses borders</small></label>
+        </div></fieldset><fieldset id="card-fields" hidden disabled><div class="examples"><button type="button" id="legitimate-example">Fill legitimate benchmark example (label 0)</button><button type="button" id="fraud-example">Fill fraud benchmark example (label 1)</button></div><p class="small muted" style="margin-top:12px">Examples load held-out historical rows and only fill the input. Their historical labels are not model predictions; either example may be misclassified.</p><label class="field" for="card-json">Benchmark feature object (JSON)<textarea id="card-json" spellcheck="false" required aria-describedby="card-help" placeholder='{"Time": 0, "V1": 0, "…": "include every V1–V28", "Amount": 0}'></textarea><small id="card-help">Exactly 30 numeric fields: Time, V1–V28, Amount. All must be finite; Time and Amount must be nonnegative. Do not include Class, labels, or raw payment details.</small></label></fieldset><button class="primary" id="submit-prediction" type="submit" style="margin-top:18px">Score &amp; save transaction</button></form><div id="prediction-status" class="status" role="status" aria-live="polite" aria-atomic="true"></div></article>
+        <article class="card" id="prediction-result" aria-label="Prediction result" tabindex="-1"><div class="eyebrow">Ensemble assessment</div><div id="result-empty" class="empty">Your prediction will appear here.<br>No transaction has been submitted.</div><div id="result-content" hidden><div class="row" style="margin-top:16px"><h2>Risk score</h2><span id="result-decision" class="badge"></span></div><div class="result-score" id="result-risk">—</div><div class="meter" aria-hidden="true"><span id="risk-meter"></span></div><p class="small muted">A model risk signal, not a confirmed fraud label or a calibrated probability.</p><dl><div class="data-row"><dt>XGBoost score</dt><dd id="result-xgb">—</dd></div><div class="data-row"><dt>Anomaly score</dt><dd id="result-anomaly">—</dd></div><div class="data-row"><dt>Inference latency</dt><dd id="result-latency">—</dd></div><div class="data-row"><dt>Model version</dt><dd id="result-version">—</dd></div><div class="data-row"><dt>Saved record</dt><dd id="result-id">—</dd></div><div class="data-row"><dt>Created</dt><dd id="result-time">—</dd></div></dl></div></article></div>
+      </section>
+
+      <section id="history" aria-label="Transaction history" hidden><article class="card"><div class="row"><div><h2>Saved transaction history</h2><p class="subtitle">Latest 100 records within the reporting window. Decision filtering applies to this loaded set.</p></div><label class="field" for="decision-filter">Decision<select id="decision-filter"><option value="all">All decisions</option><option value="approve">Approve</option><option value="review">Review</option><option value="block">Block</option></select></label></div><div class="table-wrap"><table><caption id="history-caption">Loading saved transactions…</caption><thead><tr><th scope="col">Record / model</th><th scope="col">Created (local time)</th><th scope="col">Amount</th><th scope="col">Risk</th><th scope="col">Decision</th><th scope="col">Latency</th><th scope="col">Features</th></tr></thead><tbody id="history-body"></tbody></table></div><div id="history-empty" class="empty" hidden></div><div class="pager"><span class="small muted" id="page-info">No records loaded</span><div class="controls"><button id="previous" disabled>← Previous</button><button id="next" disabled>Next →</button></div></div></article></section>
+
+      <section id="model" aria-label="Model and training" hidden><div class="section-head"><h2>Model performance</h2><p class="subtitle">Held-out synthetic evaluation. These metrics do not establish real-world fraud detection performance.</p></div><div class="metrics"><article class="card metric"><div class="metric-label">Precision</div><div class="metric-value" id="precision">—</div><div class="metric-foot">Held-out synthetic evaluation</div></article><article class="card metric"><div class="metric-label">Recall</div><div class="metric-value" id="recall">—</div><div class="metric-foot">Held-out synthetic evaluation</div></article><article class="card metric"><div class="metric-label">F1 score</div><div class="metric-value" id="f1">—</div><div class="metric-foot">Held-out synthetic evaluation</div></article><article class="card metric"><div class="metric-label">ROC AUC</div><div class="metric-value" id="roc_auc">—</div><div class="metric-foot">Held-out synthetic evaluation</div></article></div><div class="grid"><article class="card"><h2>Model provenance</h2><dl><div class="data-row"><dt>Version</dt><dd id="model-version">—</dd></div><div class="data-row"><dt>Trained</dt><dd id="model-trained">—</dd></div><div class="data-row"><dt>Training source</dt><dd id="model-source">—</dd></div><div class="data-row"><dt>Input features</dt><dd id="model-features">—</dd></div></dl><p class="small muted" style="margin-top:18px">The ensemble is trained only on generated synthetic data. Submitted transactions are scored and stored locally; they are not verified training labels. Approve, review and block are recommendations; this app does not execute payments.</p></article><article class="card"><h2>Train / retrain</h2><p class="subtitle">Build a fresh model from synthetic training data and replace the active version. This may take a little time.</p><button class="primary" id="retrain" style="margin-top:18px">Train / retrain model</button><div id="training-status" class="status" role="status" aria-live="polite" aria-atomic="true"></div><p class="small muted">Manual training only. No external cloud or deployment pipeline is connected.</p></article></div></section>
+      <footer class="footnote" id="source-footer">Sentinel ML · Local inference workspace · Loading model source · Values are loaded from the backend; no simulated telemetry.</footer>
+      <noscript><div class="notice">JavaScript is required to load model data and submit predictions.</div></noscript>
+    </main>
+  </div>
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const number = value => typeof value === 'number' && Number.isFinite(value);
+    const fmt = value => number(value) ? value.toLocaleString(undefined, {maximumFractionDigits:2}) : '—';
+    const percent = value => number(value) ? (value * 100).toFixed(1) + '%' : '—';
+    const decimal = value => number(value) ? value.toFixed(3) : '—';
+    const time = value => value && !Number.isNaN(new Date(value).getTime()) ? new Date(value).toLocaleString() : '—';
+    const text = (id, value) => { $(id).textContent = value == null ? '—' : String(value); };
+    const cardKeys = ['Time', ...Array.from({length:28}, (_,i) => `V${i+1}`), 'Amount'];
+    const state = { records:[], page:0, request:0, ready:false, online:false, predicting:false, training:false, historyLoaded:false, source:null, examplesLoading:false };
+    const titles = {
+      overview:['Your risk, in focus.', 'Explore saved predictions and the signals behind them.'],
+      predict:['Every transaction has a story.', 'Run the local ensemble on six transaction features.'],
+      history:['A clear trail of decisions.', 'Inspect saved scores, recommendations and model versions.'],
+      model:['Understand the model.', 'Inspect synthetic evaluation metrics and manage local training.']
+    };
+    function showView(name) {
+      document.querySelectorAll('[data-view]').forEach(button => {
+        if (button.dataset.view === name) button.setAttribute('aria-current', 'page');
+        else button.removeAttribute('aria-current');
+      });
+      Object.keys(titles).forEach(id => { $(id).hidden = id !== name; });
+      text('page-title', titles[name][0]); text('page-subtitle', titles[name][1]);
+      $('page-title').focus({preventScroll:true});
+    }
+    function message(id, value, error=false) {
+      text(id, value); $(id).classList.toggle('error', error);
+    }
+    function syncButtons() {
+      const busy = state.predicting || state.training || state.examplesLoading;
+      $('submit-prediction').disabled = !state.ready || !state.source || busy;
+      $('prediction-fields').disabled = state.source !== 'synthetic' || busy;
+      $('card-fields').disabled = state.source !== 'real_creditcard' || busy;
+      $('prediction-fields').hidden = state.source !== 'synthetic';
+      $('card-fields').hidden = state.source !== 'real_creditcard';
+      $('retrain').disabled = !state.online || state.training || state.predicting;
+      text('submit-prediction', state.predicting ? 'Scoring & saving…' : 'Score & save transaction');
+      text('retrain', state.training ? 'Training model…' : 'Train / retrain model');
+      $('prediction-form').setAttribute('aria-busy', String(state.predicting || state.examplesLoading));
+    }
+    async function api(path, options={}) {
+      const controller = new AbortController();
+      const timer = options.method ? null : setTimeout(() => controller.abort(), 20000);
+      try {
+        const response = await fetch(path, {...options, signal:controller.signal, headers:{Accept:'application/json', ...(options.body ? {'Content-Type':'application/json'} : {})}, cache:'no-store'});
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) throw new Error('The server did not return JSON. Open this page through the application backend, not a static file server.');
+        const body = await response.json();
+        if (!response.ok) {
+          const detail = typeof body.detail === 'string' ? body.detail : typeof body.error === 'string' ? body.error : typeof body.message === 'string' ? body.message : 'Request rejected';
+          throw new Error(`${detail} (HTTP ${response.status})`);
+        }
+        return body;
+      } catch (error) {
+        if (error.name === 'AbortError') throw new Error('The server took too long to respond. Check the backend and refresh.');
+        if (error instanceof TypeError) throw new Error('Cannot reach the backend. Start the application server and open its dashboard URL.');
+        throw error;
+      } finally { if (timer) clearTimeout(timer); }
+    }
+    function renderModel(model) {
+      state.source = ['synthetic','real_creditcard'].includes(model?.training_source) ? model.training_source : null;
+      const real = state.source === 'real_creditcard';
+      const source = real ? 'ULB / Worldline historical credit-card benchmark' : state.source ? 'generated synthetic data' : 'unavailable model source';
+      const evaluation = real ? 'Held-out historical benchmark evaluation' : state.source ? 'Held-out synthetic evaluation' : 'Evaluation source unavailable';
+      $('benchmark-notice').hidden = !real;
+      text('source-note', `${source}. Local inference; no live bank integration.`);
+      text('source-footer', `Sentinel ML · Local inference workspace · ${source} · Values are loaded from the backend; no simulated telemetry.`);
+      document.querySelector('#overview .stack article:last-child .subtitle').textContent = real ? 'Paste 30 benchmark features to run the trained ensemble and save its recommendation.' : state.source ? 'Enter six features to run the trained ensemble and save its recommendation.' : 'Load model metadata to determine the supported input features.';
+      titles.predict[1] = real ? 'Score historical anonymized benchmark features with the local ensemble.' : state.source ? 'Run the local ensemble on six transaction features.' : 'Model metadata is required before scoring.';
+      titles.model[1] = `Inspect ${evaluation.toLowerCase()} metrics and manage local training.`;
+      const active = document.querySelector('[data-view][aria-current="page"]');
+      if (active) text('page-subtitle', titles[active.dataset.view][1]);
+      document.querySelector('#model .section-head .subtitle').textContent = `${evaluation}. These metrics do not establish live bank fraud detection performance.`;
+      document.querySelectorAll('#model .metric-foot').forEach(node => { node.textContent = evaluation; });
+      document.querySelector('#model .grid article:first-child > p').textContent = `Training source: ${source}. Submitted transactions are scored and stored locally; they are not verified training labels. Approve, review and block are recommendations; this app does not execute payments.`;
+      document.querySelector('#model .grid article:last-child > p').textContent = `Build a fresh model using the server's active training source (${source}) and replace the active version. This may take a little time.`;
+      $('average-precision-card').hidden = !real;
+      text('average_precision', decimal(model?.metrics?.average_precision));
+      text('model-thresholds', model?.thresholds ? `Review ≥ ${decimal(model.thresholds.review)} · Block ≥ ${decimal(model.thresholds.block)}` : 'Unavailable');
+      text('model-splits', model?.splits ? Object.entries(model.splits).map(([name,split]) => `${name}: ${fmt(split.count)} rows (${fmt(split.class_counts?.['1'])} fraud)`).join(' · ') : model ? `Train: ${fmt(model.train_count)} · Holdout: ${fmt(model.holdout_count)}` : 'Unavailable');
+      ['precision','recall','f1'].forEach(key => text(key, percent(model?.metrics?.[key])));
+      text('roc_auc', decimal(model?.metrics?.roc_auc));
+      text('model-version', model?.version); text('version', model?.version ? `Model ${model.version}` : 'Model version unavailable');
+      text('model-trained', time(model?.trained_at));
+      text('model-source', model?.training_source === 'synthetic' ? 'Synthetic data only' : model?.training_source);
+      text('model-features', Array.isArray(model?.features) ? model.features.join(', ') : '—');
+    }
+    function svgNode(tag, attrs={}, value) {
+      const node = document.createElementNS('http://www.w3.org/2000/svg',tag);
+      Object.entries(attrs).forEach(([key,val]) => node.setAttribute(key,String(val)));
+      if (value != null) node.textContent = String(value);
+      return node;
+    }
+    function cell(row, value) { const td = document.createElement('td'); td.textContent = String(value); row.append(td); return td; }
+    function renderChart(series, available=true) {
+      const svg = $('chart'); svg.replaceChildren(); $('chart-data').replaceChildren();
+      const points = Array.isArray(series) ? series.filter(p => number(p.total) && number(p.flagged)) : [];
+      const hasVolume = points.some(p => p.total > 0);
+      svg.toggleAttribute('hidden', !hasVolume); $('chart-empty').hidden = hasVolume; $('chart-details').hidden = !points.length;
+      text('chart-empty', available ? 'No saved predictions in this reporting window. Score a transaction to begin.' : 'Transaction volume is unavailable. Check the backend and refresh.');
+      points.forEach(p => { const row = document.createElement('tr'); cell(row,p.label); cell(row,fmt(p.total)); cell(row,fmt(p.flagged)); $('chart-data').append(row); });
+      if (!hasVolume) return;
+      const max = Math.max(1,...points.flatMap(p => [p.total,p.flagged]));
+      const x = i => points.length === 1 ? 375 : 55 + i / (points.length - 1) * 635;
+      const y = value => 202 - value / max * 177;
+      svg.append(svgNode('title', {}, 'Saved transaction volume: total and flagged'));
+      svg.append(svgNode('desc', {}, 'Counts from the backend for the selected reporting window. Exact values are available in the chart data table.'));
+      for (let i=0; i<=4; i++) {
+        const yy = 25 + i * 177 / 4;
+        svg.append(svgNode('line',{x1:55,x2:690,y1:yy,y2:yy,stroke:'#233147','stroke-dasharray':'3 5'}));
+        svg.append(svgNode('text',{x:45,y:yy+4,'text-anchor':'end'},fmt(max * (4-i)/4)));
+      }
+      ['total','flagged'].forEach((key,index) => {
+        const color = index ? '#ab91ff' : '#35d6e8';
+        svg.append(svgNode('polyline',{points:points.map((p,i) => `${x(i)},${y(p[key])}`).join(' '),fill:'none',stroke:color,'stroke-width':2.5,...(index ? {'stroke-dasharray':'5 4'} : {})}));
+        points.forEach((p,i) => { const dot = svgNode('circle',{cx:x(i),cy:y(p[key]),r:3,fill:color}); dot.append(svgNode('title',{},`${p.label}: ${key} ${p[key]}`)); svg.append(dot); });
+      });
+      const indices = [...new Set([0, Math.floor((points.length-1)/2), points.length-1])];
+      indices.forEach(i => svg.append(svgNode('text',{x:x(i),y:231,'text-anchor':i===0?'start':i===points.length-1?'end':'middle'},points[i].label)));
+    }
+    function renderDashboard(data) {
+      text('total',fmt(data?.total_transactions)); text('flagged',fmt(data?.flagged_transactions));
+      text('blocked',fmt(data?.blocked_amount)); text('latency',number(data?.avg_latency_ms) ? `${fmt(data.avg_latency_ms)} ms` : '—');
+      text('drift-status', data?.drift?.status ? String(data.drift.status).replaceAll('_',' ') : '—');
+      text('drift-score',decimal(data?.drift?.score)); text('drift-threshold',decimal(data?.drift?.threshold)); text('drift-samples',fmt(data?.drift?.sample_count));
+      renderChart(data?.series, Boolean(data));
+    }
+    function decisionBadge(value) {
+      const badge = document.createElement('span'); badge.className = 'badge';
+      if (['approve','review','block'].includes(value)) badge.classList.add(value);
+      badge.textContent = value || 'Unknown'; return badge;
+    }
+    function renderHistory() {
+      const decision = $('decision-filter').value;
+      const rows = state.records.filter(record => decision === 'all' || record.decision === decision);
+      const pages = Math.ceil(rows.length / 10); state.page = Math.max(0,Math.min(state.page,pages-1));
+      const start = state.page * 10;
+      $('history-body').replaceChildren();
+      rows.slice(start,start+10).forEach(record => {
+        const row = document.createElement('tr');
+        const identity = cell(row, record.id ?? '—');
+        const version = document.createElement('div'); version.className = 'muted'; version.textContent = record.model_version ?? '—'; identity.append(version);
+        cell(row,time(record.created_at)); cell(row,fmt(record.amount)); cell(row,percent(record.risk_score));
+        const decisionCell = cell(row,''); decisionCell.append(decisionBadge(record.decision));
+        cell(row,number(record.latency_ms) ? `${fmt(record.latency_ms)} ms` : '—');
+        if (record.features && Object.hasOwn(record.features, 'Time')) {
+          const featureCell = cell(row, ''); const details = document.createElement('details');
+          const summary = document.createElement('summary'); summary.textContent = `Benchmark · Time ${fmt(record.features.Time)} · 28 PCA features`;
+          const content = document.createElement('pre'); content.textContent = JSON.stringify(record.features, null, 2);
+          details.append(summary, content); featureCell.append(details);
+        } else cell(row,`${record.hour ?? '—'}:00 · ${fmt(record.distance_km)} km · ${fmt(record.transactions_24h)}/24h · ${fmt(record.account_age_days)} days · ${record.is_international == null ? '—' : record.is_international ? 'International' : 'Domestic'}`);
+        $('history-body').append(row);
+      });
+      text('history-caption', state.historyLoaded ? `${state.records.length} loaded (latest 100 maximum) · ${rows.length} match the decision filter · Times shown in your local timezone` : 'History unavailable');
+      $('history-empty').hidden = rows.length > 0;
+      text('history-empty', !state.historyLoaded ? 'History could not be loaded. Check the backend and refresh.' : !state.records.length ? 'No saved transactions in this reporting window. Submit a prediction or choose a wider window.' : 'No loaded transactions match this decision. Try another filter.');
+      text('page-info', rows.length ? `${start+1}–${Math.min(start+10,rows.length)} of ${rows.length} matches · Page ${state.page+1} of ${pages}` : '0 records to display');
+      $('previous').disabled = state.page === 0; $('next').disabled = state.page+1 >= pages;
+    }
+    async function refresh() {
+      const request = ++state.request; const days = $('days').value;
+      $('refresh').disabled = true; text('refresh','Refreshing…');
+      message('global-status','Loading backend data…');
+      const results = await Promise.allSettled([api('/api/health'), api(`/api/dashboard?days=${days}`), api(`/api/transactions?days=${days}&limit=100`), api('/api/model')]);
+      if (request !== state.request) return;
+      const [health,dashboard,history,model] = results;
+      state.online = health.status === 'fulfilled'; state.ready = state.online && health.value.model_ready === true;
+      $('health').className = 'badge ' + (state.ready ? 'approve' : 'review');
+      text('health', state.ready ? 'Backend connected · model ready' : state.online ? 'Backend connected · model not ready' : 'Backend unavailable');
+      $('service-notice').hidden = state.ready;
+      text('service-message', state.online ? 'No trained model is ready. Train the model before submitting predictions.' : health.reason?.message || 'Cannot connect to the backend.');
+      if (location.protocol === 'http:' || location.protocol === 'https:') text('train-command', `curl -X POST ${location.origin}/api/retrain`);
+      renderDashboard(dashboard.status === 'fulfilled' ? dashboard.value : null);
+      renderModel(model.status === 'fulfilled' ? model.value : null);
+      state.ready = state.ready && Boolean(state.source);
+      if (!state.source) {
+        $('service-notice').hidden = false;
+        text('service-message','Model metadata is unavailable or has an unsupported training source. Refresh after checking the backend; scoring is disabled.');
+        $('health').className = 'badge review';
+        text('health', state.online ? 'Backend connected · model source unavailable' : 'Backend unavailable');
+      }
+      state.historyLoaded = history.status === 'fulfilled' && Array.isArray(history.value.transactions);
+      state.records = state.historyLoaded ? history.value.transactions.slice(0,100) : [];
+      renderHistory(); syncButtons();
+      const failures = results.map((result,i) => result.status === 'rejected' ? `${['Health','Overview','History','Model'][i]}: ${result.reason.message}` : null).filter(Boolean);
+      message('global-status', failures.length ? failures.join(' · ') : 'Data refreshed from the backend.', failures.length > 0);
+      text('updated', failures.length ? `Refresh incomplete · ${new Date().toLocaleTimeString()}` : `Updated ${new Date().toLocaleTimeString()}`);
+      $('refresh').disabled = false; text('refresh','Refresh data');
+    }
+    function fillExample(suspicious) {
+      if (state.source !== 'synthetic') return;
+      const values = suspicious ? {amount:8500,hour:3,distance_km:4500,transactions_24h:18,account_age_days:4,is_international:true} : {amount:65,hour:14,distance_km:3,transactions_24h:2,account_age_days:900,is_international:false};
+      Object.entries(values).forEach(([key,value]) => { $(key).value = String(value); });
+      $('amount').setCustomValidity('');
+      message('prediction-status',`${suspicious ? 'Suspicious' : 'Normal'} example filled. This is illustrative input, not a real transaction. Nothing has been submitted.`);
+      $('amount').focus();
+    }
+    function validateCard(payload) {
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Paste a JSON object containing the 30 benchmark features.');
+      if (Object.keys(payload).length !== cardKeys.length || cardKeys.some(key => !Object.hasOwn(payload,key))) throw new Error('Expected exactly Time, V1–V28 and Amount. Remove Class, labels and any extra keys; include every required feature.');
+      if (cardKeys.some(key => !number(payload[key]))) throw new Error('Every feature must be a finite JSON number, not null, a string, or a boolean.');
+      if (payload.Time < 0 || payload.Amount < 0) throw new Error('Time and Amount must be nonnegative.');
+      return payload;
+    }
+    async function fillCardExample(label) {
+      if (state.source !== 'real_creditcard' || state.examplesLoading || state.predicting || state.training) return;
+      state.examplesLoading = true; syncButtons(); message('prediction-status','Loading a held-out benchmark example…');
+      try {
+        const data = await api('/api/examples');
+        if (state.source !== 'real_creditcard') throw new Error('The active source changed. Load an example for the current model.');
+        const example = data.source === 'heldout' && Array.isArray(data.examples) ? data.examples.find(row => row.label === label) : null;
+        if (!example) throw new Error('The requested held-out example is unavailable.');
+        $('card-json').value = JSON.stringify(validateCard(example.features), null, 2);
+        $('card-json').setCustomValidity('');
+        message('prediction-status',`${label ? 'Fraud' : 'Legitimate'} held-out benchmark row filled (historical label ${label}). This label is not a prediction; the model may classify it differently. Nothing has been submitted.`);
+      } catch (error) { message('prediction-status',error.message,true); }
+      finally { state.examplesLoading = false; syncButtons(); if (!$('card-fields').disabled) $('card-json').focus(); }
+    }
+    function renderPrediction(record) {
+      $('result-empty').hidden = true; $('result-content').hidden = false;
+      text('result-risk',percent(record.risk_score)); text('result-decision',record.decision);
+      $('result-decision').className = 'badge';
+      if (['approve','review','block'].includes(record.decision)) $('result-decision').classList.add(record.decision);
+      $('risk-meter').style.width = `${number(record.risk_score) ? Math.max(0,Math.min(100,record.risk_score*100)) : 0}%`;
+      text('result-xgb',percent(record.xgb_score)); text('result-anomaly',percent(record.anomaly_score));
+      text('result-latency',number(record.latency_ms) ? `${fmt(record.latency_ms)} ms` : '—');
+      text('result-version',record.model_version); text('result-id',record.id); text('result-time',time(record.created_at));
+    }
+    document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click',() => showView(button.dataset.view)));
+    $('start-scoring').addEventListener('click',() => showView('predict'));
+    $('normal-example').addEventListener('click',() => fillExample(false));
+    $('suspicious-example').addEventListener('click',() => fillExample(true));
+    $('legitimate-example').addEventListener('click',() => fillCardExample(0));
+    $('fraud-example').addEventListener('click',() => fillCardExample(1));
+    $('card-json').addEventListener('input',() => $('card-json').setCustomValidity(''));
+    $('refresh').addEventListener('click',refresh);
+    $('days').addEventListener('change',() => { state.page=0; refresh(); });
+    $('decision-filter').addEventListener('change',() => { state.page=0; renderHistory(); });
+    $('previous').addEventListener('click',() => { state.page--; renderHistory(); });
+    $('next').addEventListener('click',() => { state.page++; renderHistory(); });
+    $('amount').addEventListener('input',() => $('amount').setCustomValidity(''));
+    $('prediction-form').addEventListener('submit',async event => {
+      event.preventDefault();
+      if (state.predicting || state.training || state.examplesLoading || !state.ready || !state.source) return;
+      const real = state.source === 'real_creditcard';
+      let payload = {};
+      if (real) {
+        try { payload = validateCard(JSON.parse($('card-json').value)); }
+        catch (error) { const detail = error instanceof SyntaxError ? 'Invalid JSON. Paste one object with 30 numeric features; NaN and Infinity are not valid JSON.' : error.message; $('card-json').setCustomValidity(detail); message('prediction-status',detail,true); $('card-json').reportValidity(); return; }
+      } else {
+      $('amount').setCustomValidity(Number($('amount').value) > 0 ? '' : 'Enter an amount greater than zero.');
+      ['amount','hour','distance_km','transactions_24h','account_age_days'].forEach(key => { payload[key] = Number($(key).value); });
+      payload.is_international = $('is_international').value === 'true';
+      }
+      if (!$('prediction-form').reportValidity()) return;
+      state.predicting = true; syncButtons(); message('prediction-status','Running inference and saving the result…');
+      $('result-content').hidden = true; $('result-empty').hidden = false; text('result-empty','Waiting for this prediction…');
+      try {
+        const record = await api(real ? '/api/predict/card' : '/api/predict',{method:'POST',body:JSON.stringify(payload)});
+        renderPrediction(record);
+        message('prediction-status',`Saved transaction ${record.id}. Recommendation: ${record.decision}. Risk score ${percent(record.risk_score)}.`);
+        if (!$('predict').hidden) $('prediction-result').focus({preventScroll:true});
+        await refresh();
+      } catch (error) {
+        message('prediction-status',`${error.message} If the request reached the server, it may have been saved. Refresh and check history before submitting again.`,true);
+        text('result-empty','No confirmed result for this submission. Check history before retrying.');
+      } finally { state.predicting=false; syncButtons(); }
+    });
+    $('retrain').addEventListener('click',async () => {
+      if (state.training || state.predicting || !state.online) return;
+      const source = state.source === 'real_creditcard' ? 'the real ULB / Worldline credit-card benchmark' : state.source === 'synthetic' ? 'synthetic data' : 'the server-configured training source (metadata unavailable)';
+      if (!window.confirm(`Train a fresh model using ${source} and replace the active model? The server retains its active training source. Saved predictions retain their original model versions.`)) return;
+      state.training=true; syncButtons(); $('model').setAttribute('aria-busy','true');
+      message('training-status',`Training using ${source}. Please keep this page open…`);
+      try {
+        const result = await api('/api/retrain',{method:'POST'});
+        message('training-status',`Training response: ${result.status}. Model version: ${result.model_version || 'not returned'}.`);
+        await refresh();
+      } catch (error) {
+        message('training-status',`${error.message} Training may still have completed on the server. Refresh to check the model version before trying again.`,true);
+      } finally { state.training=false; $('model').setAttribute('aria-busy','false'); syncButtons(); }
+    });
+    const apCard = document.createElement('article'); apCard.className = 'card metric'; apCard.id = 'average-precision-card'; apCard.hidden = true;
+    for (const [className, value, id] of [['metric-label','Average precision (AP)'],['metric-value','—','average_precision'],['metric-foot','Held-out historical benchmark evaluation']]) {
+      const node = document.createElement('div'); node.className = className; node.textContent = value; if (id) node.id = id; apCard.append(node);
+    }
+    document.querySelector('#model .metrics').append(apCard);
+    for (const [label,id] of [['Selected risk thresholds','model-thresholds'],['Dataset split counts','model-splits']]) {
+      const row = document.createElement('div'); row.className = 'data-row'; const dt = document.createElement('dt'); dt.textContent = label; const dd = document.createElement('dd'); dd.id = id; dd.textContent = '—'; row.append(dt,dd); document.querySelector('#model dl').append(row);
+    }
+    renderModel(null); syncButtons(); refresh();
+  </script>
+</body>
+</html>
